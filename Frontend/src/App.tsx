@@ -4,6 +4,7 @@ import Cart from './Pages/Cart';
 import LandingPage from './Pages/LandingPage';
 import Schedule from './Pages/Schedule';
 import SearchPage from './Pages/SearchPage';
+import ResultPage from './Pages/ResultPage';
 
 const AppRoutes = () => (
   <Routes>
@@ -11,7 +12,9 @@ const AppRoutes = () => (
     <Route path="/cart" element={<Cart />} />
     <Route path="/schedule" element={<Schedule />} />
     <Route path="/search" element={<SearchPage />} />
+    <Route path="/result" element={<ResultPage />} />
   </Routes>
+  
 );
 
 const App: React.FC = () => {

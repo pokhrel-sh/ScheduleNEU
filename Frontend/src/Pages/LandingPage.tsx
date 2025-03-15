@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function LandingPage (){
     return (
         <div>
@@ -6,6 +8,7 @@ function LandingPage (){
             <h2>Step 2: Add the classes you want to your cart</h2>
             <h2>Step 3: Go to your cart and click the "Generate Schedule" button</h2>
             <h2>Step 4: View your schedule and save it to your calendar</h2>
+            <Link to="/search"> Continue </Link>
         </div>
     )
 }
