@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Cart from './Pages/Cart';
 import LandingPage from './Pages/LandingPage';
 import Schedule from './Pages/Schedule';
-import SearchPage from './Pages/SearchPage';
-import ResultPage from './Pages/ResultPage';
+import SearchPage from './Pages/Search/SearchPage';
+import ResultPage from './Pages/SearchResult/ResultPage';
 
 const AppRoutes = () => (
   <Routes>
