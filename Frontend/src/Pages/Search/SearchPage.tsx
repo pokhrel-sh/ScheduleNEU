@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { semesters } from "./semester";
-import { useNavigate } from "react-router-dom"; // ✅ Use useNavigate for navigation
+import { useNavigate } from "react-router-dom";
 
 function SearchPage() {
     const [query, setQuery] = useState("");
