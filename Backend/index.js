@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 6969;
 app.use(cors());
 app.use(bodyParser.json());
 
-const { MongoClient } = require('mongodb');
+//const { MongoClient } = require('mongodb');
 
 let courses = []
 let coursess = []
@@ -27,19 +27,19 @@ app.post("/api/courses", (req, res) => {
     }
 
     const courseData =  {semester, department, courseNumber, courseCode }
-
-    const uri = "mongodb+srv://<username>:<password>@<your-cluster-url>/sample_airbnb?retryWrites=true&w=majority";
-
-    const client = new MongoClient(uri);
-
-    try {
-        await client.connect();
-        await  listDatabases(client);
-    } catch (e) {
-        console.error(e);
-    } finally {
-        await client.close();
-    }
+//
+//    const uri = "mongodb+srv://<username>:<password>@<your-cluster-url>/sample_airbnb?retryWrites=true&w=majority";
+//
+//    const client = new MongoClient(uri);
+//
+//    try {
+//        await client.connect();
+//        await  listDatabases(client);
+//    } catch (e) {
+//        console.error(e);
+//    } finally {
+//        await client.close();
+//    }
 
     console.log("Received Course Data:", courseData);
     courses.push(courseData)
