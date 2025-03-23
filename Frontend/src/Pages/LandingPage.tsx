@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import React, { Link } from "react-router-dom";
 
 function LandingPage() {
   return (
@@ -14,7 +14,7 @@ function LandingPage() {
           Step 2: <span className="text-gray-500">Add the classes you want to your cart</span>
         </h2>
         <h2 className="text-xl font-semibold">
-          Step 3: <span className="text-gray-500">Go to your cart and click the <span className="font-bold text-blue-600">"Generate Schedule"</span> button</span>
+          Step 3: <span className="text-gray-500">Go to your cart and click the <span className="font-bold text-blue-600">Generate Schedule</span> button</span>
         </h2>
         <h2 className="text-xl font-semibold">
           Step 4: <span className="text-gray-500">View your schedule and save it to your calendar</span>

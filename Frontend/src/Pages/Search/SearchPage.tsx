@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { semesters } from "./semester";
 import { useNavigate } from "react-router-dom";
 
@@ -14,8 +14,8 @@ function SearchPage() {
         let courseNum = "";
 
         for (let i = 0; i < query.length; i++) {
-            let characterToAscii = query.toLowerCase().charCodeAt(i);
-            let tempChar = query[i];
+            const characterToAscii = query.toLowerCase().charCodeAt(i);
+            const tempChar = query[i];
 
             if (characterToAscii >= 97 && characterToAscii <= 122) {
                 courseID += tempChar;
