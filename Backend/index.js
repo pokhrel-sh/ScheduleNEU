@@ -13,6 +13,10 @@ app.use(bodyParser.json());
 
 let courses = []
 app.post("/api/courses", (req, res) => {
+    if(courses.length > 0){
+        courses.length = 0
+    }
+
     const { semester, department, courseNumber, courseCode } = req.body;
 
     if (!semester || !department || !courseNumber || !courseCode) {
