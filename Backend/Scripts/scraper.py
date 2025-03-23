@@ -137,13 +137,14 @@ for page in range(1, 2):
                     title_element = class_details_section.find_element(By.ID, "courseTitle")
                     course_data.title = title_element.text.strip()
 
-                    class_description_section = popup.find_element(By.XPATH, "//section[@aria-labelledby='courseDescription']")
-                    description_element = class_description_section.find_element(By.ID, "classDetailsContentDiv")
-                    description_element2 = description_element.find_element(By.ID, "classDetailsContentDetailsDiv")
-                    course_data.description = description_element2.text.strip()
+                    # class_description_section = popup.find_element(By.XPATH, "//section[@aria-labelledby='courseDescription']")
+                    # description_element = class_description_section.find_element(By.ID, "classDetailsContentDiv")
+                    # description_element2 = description_element.find_element(By.ID, "classDetailsContentDetailsDiv")
+                    # course_data.description = description_element2.text.strip()
 
                     print(f"Successfully extracted data for course: {course_data.title} (ID: {course_id})")
-                    
+                
+
                     close_button = popup.find_element(By.CLASS_NAME, "ui-dialog-titlebar-close")
                     close_button.click()
                     time.sleep(1)
