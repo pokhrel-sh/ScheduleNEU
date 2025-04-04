@@ -11,41 +11,38 @@ const PORT = process.env.PORT || 6969;
 app.use(cors());
 app.use(bodyParser.json());
 
-//const { MongoClient } = require('mongodb');
+import { MongoClient } from "mongodb";
+const client = new MongoClient("mongodb://localhost:27017/");
 
 let courses = []
 let coursess = []
-app.post("/api/courses", (req, res) => {
-    if(courses.length > 0){
-        courses.length = 0
-    }
 
+app.post("/api/courses", async (req, res) => {
     const { semester, department, courseNumber, courseCode } = req.body;
 
     if (!semester || !department || !courseNumber || !courseCode) {
         return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const courseData =  {semester, department, courseNumber, courseCode }
-//
-//    const uri = "mongodb+srv://<username>:<password>@<your-cluster-url>/sample_airbnb?retryWrites=true&w=majority";
-//
-//    const client = new MongoClient(uri);
-//
-//    try {
-//        await client.connect();
-//        await  listDatabases(client);
-//    } catch (e) {
-//        console.error(e);
-//    } finally {
-//        await client.close();
-//    }
+    try {
+        await client.connect();
+        const db = client.db("Courses");
+        const collection = db.collection(semester);
 
-    console.log("Received Course Data:", courseData);
-    courses.push(courseData)
-    coursess.push(courses)
-    console.log(coursess)
-    res.status(200).json({ message: "Course data received successfully!" });
+        const courseData = await collection.findOne({ courseCode });
+
+        if (!courseData) {
+            return res.status(404).json({ error: "Course not found" });
+        }
+
+        console.log("Fetched Course Data:", courseData);
+        res.status(200).json(courseData);
+    } catch (error) {
+        console.error("Error querying MongoDB:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+        await client.close();
+    }
 });
 
 app.get("/courses", (req,res) =>{

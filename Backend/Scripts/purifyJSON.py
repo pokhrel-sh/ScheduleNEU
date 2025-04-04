@@ -1,38 +1,57 @@
 import json
 
-def extract_course_info(data):
-    extracted_courses = []
-    for entry in data:
-        course_info = {
-            "title": entry.get("section-details-link"),
-            "department": entry.get("readonly"),
-            "courseNumber": entry.get("readonly (2)"),
-            "sectionNumber": entry.get("readonly (3)"),
-            "creditHours": entry.get("readonly (4)"),
-            "courseReferenceNumber": entry.get("readonly (5)"),
-            "meetingDays": entry.get("ui-pillbox-summary"),
-            "meetingTimes": entry.get("meeting"),
-            "meetingDay2": entry.get("ui-pillbox-summary (2)"),
-            "meetingTimes2": entry.get("meeting (6)"),
-            "campus": entry.get("readonly (7)")
-        }
-        extracted_courses.append(course_info)
-    return extracted_courses
-
-if __name__ == "__main__":
-    input_filename = "input.json"
-    output_filename = "output.json"
+def match_and_format(course_details, schedule_details):
+    formatted_courses = []
     
-    try:
-        with open(input_filename, "r") as infile:
-            data = json.load(infile)
-            extracted_info = extract_course_info(data)
+    for schedule in schedule_details:
+        crn_schedule = schedule.get("readonly (5)")
         
-        with open(output_filename, "w") as outfile:
-            json.dump(extracted_info, outfile, indent=4)
-        
-        print(f"Extracted information saved to {output_filename}")
-    except json.JSONDecodeError:
-        print("Invalid JSON in input file.")
-    except FileNotFoundError:
-        print(f"File {input_filename} not found.")
+        for course in course_details:
+            if course.get("crn") == crn_schedule:
+                formatted_course = {
+                    "term": course.get("term"),
+                    "crn": crn_schedule,
+                    "campus": schedule.get("readonly (7)"),
+                    "scheduletype": schedule.get("expand"),
+                    "section_number": course.get("section_number"),
+                    "course_code": course.get("course_code"),
+                    "course_number": course.get("course_number"),
+                    "courseIdentification": course.get("course_code", "") + course.get("course_number", ""),
+                    "title": course.get("title"),
+                    "credit_hours": course.get("credit_hours"),
+                    "description": course.get("description"),
+                    "instructor_name": course.get("instructor_name"),
+                    "time_held1": schedule.get("meeting"),
+                    "day_held1": schedule.get("ui-pillbox-summary"),
+                    "building": schedule.get("tooltip-row (3)"),
+                    "room_number": schedule.get("tooltip-row (5)"),
+                    "seats": schedule.get("readonly (8)")
+                }
+                
+                # Adding additional meeting times if they exist
+                for i in range(2, 6):
+                    time_key = f"meeting ({(i-1) * 5 + 1})"
+                    day_key = f"ui-pillbox-summary ({i})"
+                    if time_key in schedule and day_key in schedule:
+                        formatted_course[f"time_held{i}"] = schedule[time_key]
+                        formatted_course[f"day_held{i}"] = schedule[day_key]
+                
+                formatted_courses.append(formatted_course)
+    
+    return formatted_courses
+
+# Load JSON data (replace with actual file reading if needed)
+with open("course_details.json") as f:
+    course_details = json.load(f)
+
+with open("schedule_details.json") as f:
+    schedule_details = json.load(f)
+
+# Process the data
+formatted_data = match_and_format(course_details, schedule_details)
+
+# Output the formatted data to a JSON file
+with open("formatted_courses.json", "w") as f:
+    json.dump(formatted_data, f, indent=4)
+
+print("Formatted data saved to formatted_courses.json")
