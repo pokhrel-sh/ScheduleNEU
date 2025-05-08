@@ -53,7 +53,7 @@ function SearchPage() {
         console.log("Sending data:", courseData);
 
         try {
-            const response = await fetch("http://localhost:6968/api/courses", {
+            const response = await fetch("http://localhost:6968/api/coursess", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
