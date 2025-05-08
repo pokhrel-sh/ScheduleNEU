@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { semesters } from "./semester";
 import { useNavigate } from "react-router-dom";
 
