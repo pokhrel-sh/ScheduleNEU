@@ -1,7 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import json
 import time
 
@@ -14,7 +16,7 @@ class CourseData:
         self.schedule_type = None
         self.instructional_method = None
         self.section_number = None
-        self.subject = None
+        self.subject = None 
         self.course_code = None
         self.course_number = None
         self.title = None
@@ -37,15 +39,15 @@ driver.get("https://nubanner.neu.edu/StudentRegistrationSsb/ssb/term/termSelecti
 driver.maximize_window()
 
 time.sleep(2)
+wait = WebDriverWait(driver, 10)
 
-# semester select
 term_dropdown = driver.find_element(By.CLASS_NAME, "select2-choice")
 term_dropdown.click()
 
 time.sleep(1)
 
 
-course_terms = "Winter 2025 CPS Quarter"
+course_terms = "Fall 2025 Semester"
 search_input = driver.find_element(By.CLASS_NAME, "select2-input")
 search_input.clear()
 search_input.send_keys(course_terms)
@@ -54,7 +56,7 @@ time.sleep(1)
 
 term_results = driver.find_elements(By.CSS_SELECTOR, "#select2-results-1 li")
 for result in term_results:
-    if "202525" in result.get_attribute("id") or course_terms in result.text:
+    if "202610" in result.get_attribute("id") or course_terms in result.text:
         result.click()
         break
 
@@ -93,10 +95,12 @@ def safe_get_text(xpath):
     except NoSuchElementException:
         return "N/A"
 
-for page in range(1, 3):
+
+for page in range(1, 10):
     try:
         print(f"Processing page {page} of {totalPage}")
-        tbody = driver.find_element(By.TAG_NAME, "tbody")
+        # Wait for tbody to be present
+        tbody = wait.until(EC.presence_of_element_located((By.TAG_NAME, "tbody")))
         rows = tbody.find_elements(By.TAG_NAME, "tr")
         for row in rows:
             course_data = CourseData()
@@ -127,34 +131,41 @@ for page in range(1, 3):
 
                 course_data.subject = " ".join(course_subject_text[:-1])
 
-
-                # click on the headers
                 title_link.click()
-                time.sleep(2)
-
-                course_description_tab = driver.find_element(By.ID, "courseDescription")
+                
+                course_description_tab = wait.until(EC.element_to_be_clickable((By.ID, "courseDescription")))
                 course_description_tab.click()
 
-                time.sleep(2)
-
-                course_description_section = driver.find_element(By.XPATH, "//section[@aria-labelledby='courseDescription']")
+                course_description_section = wait.until(EC.visibility_of_element_located(
+                    (By.XPATH, "//section[@aria-labelledby='courseDescription']")))
                 course_data.description = course_description_section.text.strip()
 
-                faculty_tab = driver.find_element(By.ID, "facultyMeetingTimes")
+                faculty_tab = wait.until(EC.element_to_be_clickable((By.ID, "facultyMeetingTimes")))
                 faculty_tab.click()
 
-                time.sleep(2)
+                # instructor_element = wait.until(EC.visibility_of_element_located(
+                #     (By.CSS_SELECTOR, ".meeting-faculty-member a.email")))
+                # instructor_name = instructor_element.text.strip()
+                # course_data.instructor_name = instructor_name
+                try:
+                    instructor_element = wait.until(EC.visibility_of_element_located(
+                        (By.CSS_SELECTOR, ".meeting-faculty-member a.email")
+                    ))
+                    course_data.instructor_name = instructor_element.text.strip()
+                except TimeoutException:
+                    course_data.instructor_name = "No instructor listed"
 
-                instructor_element = driver.find_element(By.CSS_SELECTOR, ".meeting-faculty-member a.email")
-
-                instructor_name = instructor_element.text.strip()
-                course_data.instructor_name = instructor_name
-
-                close_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Close')]")
+                close_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Close')]")))
                 close_button.click()
 
-                # wait before clicking another class
-                time.sleep(2)
+                # when clicking the course, it has a hyperlink extention popup right next to the element
+                # it can block the view of the next button, which breaks the program
+                # this clicks at the attribute column of the row, this makes hyperlink popup disappear, thus reducing the breaks
+                randomTextBox = row.find_element(By.XPATH, ".//td[@data-property='attribute']")
+                randomTextBox.click()
+
+                time.sleep(0.5)
+                
                 print(course_data.__dict__)
                 all_courses.append(course_data.__dict__)
             except Exception as e:
@@ -162,12 +173,23 @@ for page in range(1, 3):
                 continue
             print()
 
-
         if page < totalPage:
-            next_button = driver.find_element(By.XPATH, "//button[@title='Next']")
+   
+            current_page_input = driver.find_element(By.CLASS_NAME, "page-number")
+            current_page = current_page_input.get_attribute("value")
+            
+            next_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@title='Next']")))
             if "disabled" not in next_button.get_attribute("class"):
                 next_button.click()
-                time.sleep(3)
+                
+                WebDriverWait(driver, 10).until(
+                    lambda d: d.find_element(By.CLASS_NAME, "page-number").get_attribute("value") != current_page
+                )
+                
+                time.sleep(2)
+                
+                new_page = driver.find_element(By.CLASS_NAME, "page-number").get_attribute("value")
+                print(f"Successfully navigated to page {new_page}")
             else:
                 print("Next button is disabled, ending pagination")
                 break
@@ -176,7 +198,7 @@ for page in range(1, 3):
         print(f"Error on page {page}: {e}")
         break
 
-with open("courses_partial.json", "w", encoding="utf-8") as f:
+with open("Fall_2025_Semester.json", "w", encoding="utf-8") as f:
     json.dump(all_courses, f, indent=4, ensure_ascii=False)
 
 print(f"Data saved to courses.json - Total courses scraped: {len(all_courses)}")

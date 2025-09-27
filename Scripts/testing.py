@@ -1,7 +1,9 @@
+# I dont know what this is tbh i think it was just testing some of the stuff out.
+
 import time
 from itertools import product, count
 
-# Define tables, ensuring each has exactly 10 elements
+
 tables = [
     [
         (11409, "Monday", "10:30 AM - 11:35 AM", "Coop"),

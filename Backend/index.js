@@ -1,3 +1,5 @@
+// i will be switching to fastapi or flask in the future release and wont be using mongo
+
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
