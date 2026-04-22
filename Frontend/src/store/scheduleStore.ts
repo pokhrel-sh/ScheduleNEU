@@ -6,7 +6,8 @@ import type {
   FilterState,
   SortOption,
 } from '../types';
-import { generateAllSchedules, sortSchedules } from '../utils/scheduleGenerator';
+import { sortSchedules } from '../utils/scheduleGenerator';
+import { generateSchedules as generateSchedulesApi } from '../utils/api';
 
 const DEFAULT_FILTERS: FilterState = {
   showOpenOnly: true,
@@ -27,22 +28,25 @@ interface ScheduleStore {
   activeScheduleIndex: number;
   filters: FilterState;
   sortBy: SortOption;
+  generating: boolean;
 
   setTerm: (term: string) => void;
   addCourse: (course: SelectedCourse) => void;
-  addLockedSection: (
+  toggleSelectedSection: (
     section: SectionDisplay,
-    courseInfo: { subject: string; course_number: string; course_title: string; credits: string }
+    courseInfo: { subject: string; course_number: string; course_title: string; credits: string },
+    allSections?: SectionDisplay[]
   ) => void;
+  clearSelectedSections: (subject: string, course_number: string) => void;
   removeCourse: (subject: string, course_number: string) => void;
-  unlockSection: (subject: string, course_number: string) => void;
   clearCourses: () => void;
-  generateSchedules: () => void;
+  generateSchedules: () => Promise<void>;
   setActiveSchedule: (index: number) => void;
   setFilters: (filters: Partial<FilterState>) => void;
   resetFilters: () => void;
   setSortBy: (sort: SortOption) => void;
   loadFromStorage: () => void;
+  loadGeneratedSchedule: () => void;
 }
 
 function saveToStorage(term: string, courses: SelectedCourse[]) {
@@ -55,7 +59,7 @@ function saveToStorage(term: string, courses: SelectedCourse[]) {
           course_number: c.course_number,
           course_title: c.course_title,
           credits: c.credits,
-          lockedCrn: c.lockedSection?.crn || null,
+          selectedCrns: c.selectedSections.map((s) => s.crn),
           sections: c.sections,
         }))
       )
@@ -65,6 +69,35 @@ function saveToStorage(term: string, courses: SelectedCourse[]) {
   }
 }
 
+function restoreCourses(parsed: Array<{
+  subject: string;
+  course_number: string;
+  course_title: string;
+  credits: string;
+  selectedCrns?: string[];
+  lockedCrn?: string | null;
+  sections: SectionDisplay[];
+}>): SelectedCourse[] {
+  return parsed.map((c) => {
+    // Support both old format (lockedCrn) and new format (selectedCrns)
+    let selectedSections: SectionDisplay[] = [];
+    if (c.selectedCrns && c.selectedCrns.length > 0) {
+      selectedSections = c.sections.filter((s) => c.selectedCrns!.includes(s.crn));
+    } else if (c.lockedCrn) {
+      const locked = c.sections.find((s) => s.crn === c.lockedCrn);
+      if (locked) selectedSections = [locked];
+    }
+    return {
+      subject: c.subject,
+      course_number: c.course_number,
+      course_title: c.course_title,
+      credits: c.credits,
+      sections: c.sections,
+      selectedSections,
+    };
+  });
+}
+
 export const useScheduleStore = create<ScheduleStore>((set, get) => ({
   term: '',
   selectedCourses: [],
@@ -72,27 +105,15 @@ export const useScheduleStore = create<ScheduleStore>((set, get) => ({
   activeScheduleIndex: 0,
   filters: { ...DEFAULT_FILTERS },
   sortBy: 'earliest',
+  generating: false,
 
   setTerm: (term) => {
     set({ term, selectedCourses: [], generatedSchedules: [], activeScheduleIndex: 0 });
-    // Try to load saved courses for this term
     try {
       const saved = localStorage.getItem(`schedule_${term}`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const courses: SelectedCourse[] = parsed.map(
-          (c: { subject: string; course_number: string; course_title: string; credits: string; lockedCrn: string | null; sections: SectionDisplay[] }) => ({
-            subject: c.subject,
-            course_number: c.course_number,
-            course_title: c.course_title,
-            credits: c.credits,
-            sections: c.sections,
-            lockedSection: c.lockedCrn
-              ? c.sections.find((s: SectionDisplay) => s.crn === c.lockedCrn)
-              : undefined,
-          })
-        );
-        set({ selectedCourses: courses });
+        set({ selectedCourses: restoreCourses(parsed) });
       }
     } catch {
       // ignore parse errors
@@ -105,12 +126,16 @@ export const useScheduleStore = create<ScheduleStore>((set, get) => ({
       (c) => c.subject === course.subject && c.course_number === course.course_number
     );
     if (exists) return;
-    const updated = [...selectedCourses, course];
+    const newCourse: SelectedCourse = {
+      ...course,
+      selectedSections: course.selectedSections ?? [],
+    };
+    const updated = [...selectedCourses, newCourse];
     set({ selectedCourses: updated, generatedSchedules: [], activeScheduleIndex: 0 });
     saveToStorage(term, updated);
   },
 
-  addLockedSection: (section, courseInfo) => {
+  toggleSelectedSection: (section, courseInfo, allSections) => {
     const { selectedCourses, term } = get();
     const existingIdx = selectedCourses.findIndex(
       (c) => c.subject === courseInfo.subject && c.course_number === courseInfo.course_number
@@ -118,17 +143,36 @@ export const useScheduleStore = create<ScheduleStore>((set, get) => ({
     let updated: SelectedCourse[];
     if (existingIdx >= 0) {
       updated = [...selectedCourses];
-      updated[existingIdx] = { ...updated[existingIdx], lockedSection: section };
+      const course = { ...updated[existingIdx] };
+      const alreadySelected = course.selectedSections.some((s) => s.crn === section.crn);
+      if (alreadySelected) {
+        course.selectedSections = course.selectedSections.filter((s) => s.crn !== section.crn);
+      } else {
+        course.selectedSections = [...course.selectedSections, section];
+      }
+      updated[existingIdx] = course;
     } else {
       updated = [
         ...selectedCourses,
         {
           ...courseInfo,
-          sections: [section],
-          lockedSection: section,
+          sections: allSections || [section],
+          selectedSections: [section],
         },
       ];
     }
+    set({ selectedCourses: updated, generatedSchedules: [], activeScheduleIndex: 0 });
+    saveToStorage(term, updated);
+  },
+
+  clearSelectedSections: (subject, course_number) => {
+    const { selectedCourses, term } = get();
+    const updated = selectedCourses.map((c) => {
+      if (c.subject === subject && c.course_number === course_number) {
+        return { ...c, selectedSections: [] };
+      }
+      return c;
+    });
     set({ selectedCourses: updated, generatedSchedules: [], activeScheduleIndex: 0 });
     saveToStorage(term, updated);
   },
@@ -142,36 +186,57 @@ export const useScheduleStore = create<ScheduleStore>((set, get) => ({
     saveToStorage(term, updated);
   },
 
-  unlockSection: (subject, course_number) => {
-    const { selectedCourses, term } = get();
-    const updated = selectedCourses.map((c) => {
-      if (c.subject === subject && c.course_number === course_number) {
-        return { ...c, lockedSection: undefined };
-      }
-      return c;
-    });
-    set({ selectedCourses: updated, generatedSchedules: [], activeScheduleIndex: 0 });
-    saveToStorage(term, updated);
-  },
-
   clearCourses: () => {
     const { term } = get();
     set({ selectedCourses: [], generatedSchedules: [], activeScheduleIndex: 0 });
     try {
       localStorage.removeItem(`schedule_${term}`);
+      localStorage.removeItem(`generated_schedule_${term}`);
     } catch {
       // ignore
     }
   },
 
-  generateSchedules: () => {
-    const { selectedCourses, filters, sortBy } = get();
-    const schedules = generateAllSchedules(selectedCourses, filters);
-    const sorted = sortSchedules(schedules, sortBy);
-    set({ generatedSchedules: sorted, activeScheduleIndex: 0 });
+  generateSchedules: async () => {
+    const { selectedCourses, filters, sortBy, term } = get();
+    if (!term || selectedCourses.length === 0) return;
+    set({ generating: true });
+    try {
+      const request = {
+        courses: selectedCourses.map((c) => ({
+          subject: c.subject,
+          course_number: c.course_number,
+          course_title: c.course_title,
+          credits: c.credits,
+          section_crns: c.selectedSections.map((s) => s.crn),
+        })),
+        filters,
+      };
+      const schedules = await generateSchedulesApi(term, request);
+      const sorted = sortSchedules(schedules, sortBy);
+      set({ generatedSchedules: sorted, activeScheduleIndex: 0, generating: false });
+      // Persist
+      try {
+        localStorage.setItem(
+          `generated_schedule_${term}`,
+          JSON.stringify({ schedules: sorted, activeIndex: 0 })
+        );
+      } catch { /* ignore */ }
+    } catch {
+      set({ generatedSchedules: [], activeScheduleIndex: 0, generating: false });
+    }
   },
 
-  setActiveSchedule: (index) => set({ activeScheduleIndex: index }),
+  setActiveSchedule: (index) => {
+    const { term, generatedSchedules } = get();
+    set({ activeScheduleIndex: index });
+    try {
+      localStorage.setItem(
+        `generated_schedule_${term}`,
+        JSON.stringify({ schedules: generatedSchedules, activeIndex: index })
+      );
+    } catch { /* ignore */ }
+  },
 
   setFilters: (partial) => {
     const { filters } = get();
@@ -193,19 +258,24 @@ export const useScheduleStore = create<ScheduleStore>((set, get) => ({
       const saved = localStorage.getItem(`schedule_${term}`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const courses: SelectedCourse[] = parsed.map(
-          (c: { subject: string; course_number: string; course_title: string; credits: string; lockedCrn: string | null; sections: SectionDisplay[] }) => ({
-            subject: c.subject,
-            course_number: c.course_number,
-            course_title: c.course_title,
-            credits: c.credits,
-            sections: c.sections,
-            lockedSection: c.lockedCrn
-              ? c.sections.find((s: SectionDisplay) => s.crn === c.lockedCrn)
-              : undefined,
-          })
-        );
-        set({ selectedCourses: courses });
+        set({ selectedCourses: restoreCourses(parsed) });
+      }
+    } catch {
+      // ignore
+    }
+  },
+
+  loadGeneratedSchedule: () => {
+    const { term } = get();
+    if (!term) return;
+    try {
+      const saved = localStorage.getItem(`generated_schedule_${term}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        set({
+          generatedSchedules: parsed.schedules || [],
+          activeScheduleIndex: parsed.activeIndex || 0,
+        });
       }
     } catch {
       // ignore

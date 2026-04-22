@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Calendar, Search, Layers } from 'lucide-react';
-import logo from '../../assets/Logo.jpeg';
 import TermSelector from './TermSelector';
 
 const NAV_ITEMS = [
@@ -15,13 +14,12 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-              <img src={logo} alt="Logo" className="w-7 h-7 rounded object-cover" />
-              <span className="font-bold text-lg hidden sm:inline">
+            <Link to="/" className="flex items-center shrink-0">
+              <span className="font-bold text-xl">
                 <span className="text-red-600">Schedule</span>
-                <span className="text-blue-900">NEU</span>
+                <span className="text-blue-900">Northeastern</span>
               </span>
             </Link>
 
@@ -32,13 +30,13 @@ export default function Header() {
                   <Link
                     key={path}
                     to={path}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-base font-medium transition-colors ${
                       active
                         ? 'bg-red-50 text-red-700'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
-                    <Icon size={16} />
+                    <Icon size={18} />
                     <span className="hidden sm:inline">{label}</span>
                   </Link>
                 );

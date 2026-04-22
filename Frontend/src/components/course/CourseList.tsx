@@ -7,7 +7,9 @@ interface CourseListProps {
   loading: boolean;
   error: string | null;
   onAddCourse?: (course: CourseListItem) => void;
+  onCourseClick?: (course: CourseListItem) => void;
   selectedCourseKeys?: Set<string>;
+  activeCourse?: { subject: string; course_number: string } | null;
 }
 
 export default function CourseList({
@@ -15,7 +17,9 @@ export default function CourseList({
   loading,
   error,
   onAddCourse,
+  onCourseClick,
   selectedCourseKeys,
+  activeCourse,
 }: CourseListProps) {
   if (loading) return <LoadingSpinner message="Loading courses..." />;
 
@@ -43,7 +47,12 @@ export default function CourseList({
           key={course.subject_course}
           course={course}
           onAddCourse={onAddCourse}
+          onCourseClick={onCourseClick}
           isSelected={selectedCourseKeys?.has(`${course.subject}-${course.course_number}`)}
+          isActive={
+            activeCourse?.subject === course.subject &&
+            activeCourse?.course_number === course.course_number
+          }
         />
       ))}
     </div>

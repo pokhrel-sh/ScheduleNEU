@@ -1,11 +1,11 @@
-import { X, Lock, Unlock } from 'lucide-react';
+import { X, CheckSquare } from 'lucide-react';
 import type { SelectedCourse } from '../../types';
 
 interface SelectedCourseItemProps {
   course: SelectedCourse;
   colorIndex: number;
   onRemove: () => void;
-  onUnlock: () => void;
+  onClearSelection: () => void;
 }
 
 const COLOR_DOTS = [
@@ -23,16 +23,17 @@ export default function SelectedCourseItem({
   course,
   colorIndex,
   onRemove,
-  onUnlock,
+  onClearSelection,
 }: SelectedCourseItemProps) {
   const dotColor = COLOR_DOTS[colorIndex % COLOR_DOTS.length];
-  const sectionCount = course.lockedSection ? 1 : course.sections.length;
+  const sectionCount =
+    course.selectedSections.length > 0 ? course.selectedSections.length : course.sections.length;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3">
+    <div className="bg-white border border-gray-200 rounded-xl p-3.5">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2 min-w-0">
-          <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${dotColor}`} />
+        <div className="flex items-start gap-2.5 min-w-0">
+          <div className={`w-3.5 h-3.5 rounded-full mt-1 shrink-0 ${dotColor}`} />
           <div className="min-w-0">
             <p className="font-semibold text-sm text-gray-900 truncate">
               {course.subject} {course.course_number}
@@ -42,20 +43,21 @@ export default function SelectedCourseItem({
               <span className="text-xs text-gray-400">{course.credits} cr</span>
               <span className="text-xs text-gray-400">
                 {sectionCount} section{sectionCount !== 1 ? 's' : ''}
+                {course.selectedSections.length > 0 ? ' selected' : ''}
               </span>
             </div>
-            {course.lockedSection && (
+            {course.selectedSections.length > 0 && (
               <div className="flex items-center gap-1 mt-1">
-                <Lock size={10} className="text-red-500" />
+                <CheckSquare size={11} className="text-red-500" />
                 <span className="text-xs text-red-600">
-                  CRN {course.lockedSection.crn} locked
+                  {course.selectedSections.length} section{course.selectedSections.length !== 1 ? 's' : ''} selected
                 </span>
                 <button
-                  onClick={onUnlock}
+                  onClick={onClearSelection}
                   className="ml-1 text-xs text-gray-400 hover:text-gray-600"
-                  title="Unlock section"
+                  title="Clear selection (use all sections)"
                 >
-                  <Unlock size={10} />
+                  <X size={11} />
                 </button>
               </div>
             )}
@@ -65,7 +67,7 @@ export default function SelectedCourseItem({
           onClick={onRemove}
           className="p-1 text-gray-400 hover:text-red-500 transition-colors shrink-0"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
       </div>
     </div>

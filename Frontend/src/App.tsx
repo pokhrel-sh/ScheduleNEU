@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/common/Header';
-import HomePage from './Pages/HomePage';
 import SearchPage from './Pages/SearchPage';
 import CourseDetailPage from './Pages/CourseDetailPage';
 import SchedulePage from './Pages/SchedulePage';
@@ -20,7 +19,7 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<Layout><SearchPage /></Layout>} />
           <Route path="/search" element={<Layout><SearchPage /></Layout>} />
           <Route path="/course/:subject/:number" element={<Layout><CourseDetailPage /></Layout>} />
           <Route path="/schedule" element={<Layout><SchedulePage /></Layout>} />

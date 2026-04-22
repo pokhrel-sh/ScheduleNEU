@@ -58,8 +58,8 @@ export function generateAllSchedules(
 
   const courseOptions: { course: SelectedCourse; sections: SectionDisplay[] }[] = [];
   for (const course of selectedCourses) {
-    if (course.lockedSection) {
-      courseOptions.push({ course, sections: [course.lockedSection] });
+    if (course.selectedSections.length > 0) {
+      courseOptions.push({ course, sections: course.selectedSections });
     } else {
       const filtered = applyFilters(course.sections, filters);
       if (filtered.length === 0) return [];

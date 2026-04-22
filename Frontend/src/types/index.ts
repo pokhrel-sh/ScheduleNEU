@@ -64,7 +64,7 @@ export interface SelectedCourse {
   course_title: string;
   credits: string;
   sections: SectionDisplay[];
-  lockedSection?: SectionDisplay;
+  selectedSections: SectionDisplay[];
 }
 
 export interface GeneratedSchedule {

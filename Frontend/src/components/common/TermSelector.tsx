@@ -23,7 +23,7 @@ export default function TermSelector() {
     <select
       value={term}
       onChange={(e) => setTerm(e.target.value)}
-      className="h-9 px-3 text-sm bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+      className="h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
     >
       {terms.map((t) => (
         <option key={t.term} value={t.term}>

@@ -21,6 +21,8 @@ interface CalendarBlockProps {
   colorIndex: number;
   top: number;
   height: number;
+  leftPercent?: number;
+  widthPercent?: number;
 }
 
 export default function CalendarBlock({
@@ -29,14 +31,24 @@ export default function CalendarBlock({
   colorIndex,
   top,
   height,
+  leftPercent = 0,
+  widthPercent = 100,
 }: CalendarBlockProps) {
   const color = getColorForIndex(colorIndex);
   const compact = height < 50;
 
+  // Small gap between side-by-side blocks
+  const gap = widthPercent < 100 ? 1 : 0;
+
   return (
     <div
-      className={`absolute left-0.5 right-0.5 ${color.bg} ${color.border} border rounded-md px-1.5 py-1 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
-      style={{ top: `${top}px`, height: `${height}px` }}
+      className={`absolute ${color.bg} ${color.border} border rounded-md px-1.5 py-1 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+      style={{
+        top: `${top}px`,
+        height: `${height}px`,
+        left: `calc(${leftPercent}% + ${gap}px)`,
+        width: `calc(${widthPercent}% - ${gap * 2}px)`,
+      }}
       title={`${courseLabel}\n${section.start_time} - ${section.end_time}\n${section.building ? `${section.building} ${section.room}` : section.room}\n${section.professor}`}
     >
       <p className={`font-semibold truncate ${color.text} ${compact ? 'text-[10px]' : 'text-xs'}`}>

@@ -6,6 +6,8 @@ import type {
   CourseListItem,
   CourseWithSections,
   SectionDisplay,
+  GeneratedSchedule,
+  FilterState,
 } from '../types';
 
 const api = axios.create({
@@ -74,5 +76,29 @@ export async function getSectionsByCrns(term: string, crns: string[]): Promise<S
   const { data } = await api.get<SectionDisplay[]>(`/api/terms/${term}/sections`, {
     params: { crns: crns.join(',') },
   });
+  return data;
+}
+
+// Schedule generation
+export interface GenerateRequest {
+  courses: {
+    subject: string;
+    course_number: string;
+    course_title: string;
+    credits: string;
+    section_crns: string[];
+  }[];
+  filters: FilterState;
+  max_schedules?: number;
+}
+
+export async function generateSchedules(
+  term: string,
+  request: GenerateRequest
+): Promise<GeneratedSchedule[]> {
+  const { data } = await api.post<GeneratedSchedule[]>(
+    `/api/terms/${term}/generate-schedules`,
+    request
+  );
   return data;
 }
